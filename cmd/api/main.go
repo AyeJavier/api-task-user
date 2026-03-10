@@ -14,8 +14,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
-	"github.com/javier/api-task-user/internal/adapter/inbound/http/handler"
+
 	inboundhttp "github.com/javier/api-task-user/internal/adapter/inbound/http"
+	"github.com/javier/api-task-user/internal/adapter/inbound/http/handler"
+	outboundauth "github.com/javier/api-task-user/internal/adapter/outbound/auth"
 	"github.com/javier/api-task-user/internal/adapter/outbound/persistence/postgres"
 	"github.com/javier/api-task-user/internal/config"
 	"github.com/javier/api-task-user/internal/domain/service"
@@ -27,7 +29,7 @@ func main() {
 
 	cfg := config.Load()
 
-	// Database connection pool
+	// ---------- Database ----------
 	db, err := pgxpool.New(context.Background(), cfg.Database.URL)
 	if err != nil {
 		log.Fatalf("connecting to database: %v", err)
@@ -39,37 +41,26 @@ func main() {
 	}
 	log.Println("connected to PostgreSQL")
 
-	// --- Outbound adapters (repositories) ---
-	userRepo := postgres.NewUserRepository(db)
-	taskRepo := postgres.NewTaskRepository(db)
+	// ---------- Outbound adapters ----------
+	userRepo  := postgres.NewUserRepository(db)
+	taskRepo  := postgres.NewTaskRepository(db)
+	jwtAdapter   := outboundauth.NewJWTAdapter(cfg.JWT.Secret, time.Duration(cfg.JWT.ExpirationHours)*time.Hour)
+	hashAdapter  := outboundauth.NewBcryptAdapter(cfg.Security.BcryptCost)
 
-	// --- Auth outbound adapter (JWT + bcrypt) ---
-	// TODO: implement JWTAdapter and BcryptAdapter in outbound/auth/
-	// authAdapter := auth.NewJWTAdapter(cfg.JWT.Secret, cfg.JWT.ExpirationHours)
-	// hashAdapter := auth.NewBcryptAdapter(cfg.Security.BcryptCost)
-
-	// --- Domain services ---
-	// authSvc  := service.NewAuthService(userRepo, authAdapter, hashAdapter)
-	// userSvc  := service.NewUserService(userRepo, hashAdapter)
+	// ---------- Domain services ----------
+	authSvc := service.NewAuthService(userRepo, jwtAdapter, hashAdapter)
+	userSvc := service.NewUserService(userRepo, hashAdapter)
 	taskSvc := service.NewTaskService(taskRepo, userRepo)
 
-	// --- Inbound handlers ---
-	// authH := handler.NewAuthHandler(authSvc)
-	// userH := handler.NewUserHandler(userSvc)
+	// ---------- Inbound handlers ----------
+	authH := handler.NewAuthHandler(authSvc)
+	userH := handler.NewUserHandler(userSvc)
 	taskH := handler.NewTaskHandler(taskSvc)
 
-	// --- Router ---
-	// router := inboundhttp.NewRouter(authAdapter, authH, userH, taskH)
-	_ = taskH
-	_ = inboundhttp.NewRouter
+	// ---------- Router ----------
+	router := inboundhttp.NewRouter(jwtAdapter, authH, userH, taskH)
 
-	// TODO: remove placeholder once auth adapter is implemented
-	router := http.NewServeMux()
-	router.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
-	// --- HTTP Server with graceful shutdown ---
+	// ---------- HTTP Server ----------
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.App.Port),
 		Handler:      router,
@@ -85,7 +76,7 @@ func main() {
 		}
 	}()
 
-	// Graceful shutdown
+	// ---------- Graceful shutdown ----------
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
