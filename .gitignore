@@ -28,5 +28,22 @@ go.work.sum
 .env
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Air (hot reload)
+tmp/
+air.log
+
+# Binarios
+bin/
+
+# Swagger generado
+docs/swagger/
+
+# Reportes de cobertura
+coverage.out
+coverage.html
+.cursorrules
