@@ -47,3 +47,4 @@ docs/swagger/
 coverage.out
 coverage.html
 .cursorrules
+docs/.DS_Store

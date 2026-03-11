@@ -36,7 +36,28 @@ func NewRouter(
 	// Public auth routes
 	r.Post("/auth/login", authH.Login)
 
-	
+		// Auth
+		r.Post("/auth/logout", authH.Logout)
+		r.Put("/auth/password", authH.ChangePassword)
+
+		// Users — Admin only
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequireProfile(model.ProfileAdmin))
+			r.Post("/users", userH.Create)
+			r.Get("/users", userH.List)
+			r.Get("/users/{id}", userH.GetByID)
+			r.Delete("/users/{id}", userH.Delete)
+		})
+
+		// Tasks — Admin write
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequireProfile(model.ProfileAdmin))
+			r.Post("/tasks", taskH.Create)
+			r.Delete("/tasks/{id}", taskH.Delete)
+		})
+
+		
+	})
 
 	return r
 }
