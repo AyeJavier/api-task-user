@@ -43,8 +43,7 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (*Login
 	if err != nil {
 		return nil, apperror.ErrInvalidCredentials
 	}
-	fmt.Println("user.PasswordHash", user.PasswordHash)
-	fmt.Println("password", password)
+	
 	if err := s.hashPort.Compare(user.PasswordHash, password); err != nil {
 		return nil, apperror.ErrInvalidCredentials
 	}
@@ -75,12 +74,11 @@ func (s *AuthService) ChangePassword(ctx context.Context, userID, currentPasswor
 		return apperror.ErrUserNotFound
 	}
 
-	// if err := s.hashPort.Compare(user.PasswordHash, currentPassword); err != nil {
-	// 	return apperror.ErrInvalidCredentials
-	// }	
+	if err := s.hashPort.Compare(user.PasswordHash, currentPassword); err != nil {
+		return apperror.ErrInvalidCredentials
+	}	
 
 	hash, err := s.hashPort.Hash(newPassword)
-	fmt.Println("hash", hash)
 	if err != nil {
 		return fmt.Errorf("hashing password: %w", err)
 	}

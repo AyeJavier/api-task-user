@@ -56,8 +56,19 @@ func NewRouter(
 			r.Delete("/tasks/{id}", taskH.Delete)
 		})
 
-		
-	})
+		// Tasks — Executor
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequireProfile(model.ProfileExecutor))
+			r.Get("/tasks/me", taskH.ListMine)
+			r.Patch("/tasks/{id}/status", taskH.ChangeStatus)
+			r.Post("/tasks/{id}/comments", taskH.AddComment)
+		})
 
+		// Tasks — Auditor (read all)
+		r.Group(func(r chi.Router) {
+			r.Use(middleware.RequireProfile(model.ProfileAuditor))
+			r.Get("/tasks", taskH.ListAll)
+		})
 	return r
 }
+

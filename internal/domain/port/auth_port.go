@@ -10,6 +10,7 @@ import (
 type TokenClaims struct {
 	UserID  string
 	Profile model.Profile
+	MustChangePassword bool
 }
 
 // AuthPort is the outbound port for token generation and validation.
