@@ -18,11 +18,11 @@ func RequireProfile(allowed ...model.Profile) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			claims := ClaimsFromContext(r.Context())
 			if claims == nil {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				http.Error(w, "unauthorizedxxxx", http.StatusUnauthorized)
 				return
 			}
 			if claims.MustChangePassword {
-				http.Error(w, "unauthorized", http.StatusUnauthorized)
+				http.Error(w, "unauthorizedddd", http.StatusUnauthorized)
 				return
 			}
 			if _, ok := set[claims.Profile]; !ok {

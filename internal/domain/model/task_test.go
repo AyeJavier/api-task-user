@@ -55,8 +55,10 @@ func TestTask_CanTransitionTo_ValidTransitions(t *testing.T) {
 		{"started -> assigned (invalid)", model.TaskStatusStarted, model.TaskStatusAssigned, false},
 
 		// ON_HOLD transitions
-		{"on_hold -> started", model.TaskStatusOnHold, model.TaskStatusStarted, true},
-		{"on_hold -> finished_success (invalid)", model.TaskStatusOnHold, model.TaskStatusFinishedSuccess, false},
+		{"on_hold -> finished_success", model.TaskStatusOnHold, model.TaskStatusFinishedSuccess, true},
+		{"on_hold -> finished_error", model.TaskStatusOnHold, model.TaskStatusFinishedError, true},
+		{"on_hold -> on_hold", model.TaskStatusOnHold, model.TaskStatusOnHold, true},
+		{"on_hold -> started", model.TaskStatusOnHold, model.TaskStatusStarted, false},
 
 		// Terminal states — no transitions
 		{"finished_success -> any (invalid)", model.TaskStatusFinishedSuccess, model.TaskStatusStarted, false},
@@ -105,17 +107,15 @@ func TestTask_Transition_ExpiredTask(t *testing.T) {
 func TestTask_Transition_OnHoldToStartedCycle(t *testing.T) {
 	task := newTask(model.TaskStatusOnHold, time.Now().Add(24*time.Hour))
 
-	err := task.Transition(model.TaskStatusStarted)
-	require.NoError(t, err)
-	assert.Equal(t, model.TaskStatusStarted, task.Status)
-
-	err = task.Transition(model.TaskStatusOnHold)
+	err := task.Transition(model.TaskStatusOnHold)
 	require.NoError(t, err)
 	assert.Equal(t, model.TaskStatusOnHold, task.Status)
 
-	err = task.Transition(model.TaskStatusStarted)
+	err = task.Transition(model.TaskStatusFinishedSuccess)
 	require.NoError(t, err)
-	assert.Equal(t, model.TaskStatusStarted, task.Status)
+	assert.Equal(t, model.TaskStatusFinishedSuccess, task.Status)
+
+	
 }
 
 func TestTask_Transition_TerminalStatesAreImmutable(t *testing.T) {

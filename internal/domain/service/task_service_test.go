@@ -289,9 +289,47 @@ func TestTaskService_ChangeStatus_OnHoldToStartedCycle(t *testing.T) {
 	taskRepo.On("FindByID", ctx, "t1").Return(task, nil)
 	taskRepo.On("Update", ctx, mock.Anything).Return(nil)
 
-	err := svc.ChangeStatus(ctx, executorUser(), "t1", model.TaskStatusStarted)
+	err := svc.ChangeStatus(ctx, executorUser(), "t1", model.TaskStatusFinishedError)
 
 	assert.NoError(t, err)
+}
+func TestTaskService_ChangeStatus_OnHoldTransitions(t *testing.T) {
+	tests := []struct {
+		name        string
+		target      model.TaskStatus
+	}{
+		{
+			name:   "OnHoldToFinishedSuccess",
+			target: model.TaskStatusFinishedSuccess,
+		},
+		{
+			name:   "OnHoldToFinishedError",
+			target: model.TaskStatusFinishedError,
+		},
+		{
+			name:   "OnHoldToOnHoldAgain",
+			target: model.TaskStatusOnHold,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			svc, taskRepo, _ := setupTaskService()
+			ctx := context.Background()
+			task := &model.Task{
+				ID:         "t1",
+				Status:     model.TaskStatusOnHold,
+				AssigneeID: "exec-1",
+				DueDate:    futureDate(),
+			}
+			taskRepo.On("FindByID", ctx, "t1").Return(task, nil)
+			taskRepo.On("Update", ctx, mock.MatchedBy(func(updated *model.Task) bool {
+				return updated.Status == tt.target
+			})).Return(nil)
+			err := svc.ChangeStatus(ctx, executorUser(), "t1", tt.target)
+			assert.NoError(t, err)
+			taskRepo.AssertExpectations(t)
+		})
+	}
 }
 
 // ==================== EXECUTOR: AddComment ====================

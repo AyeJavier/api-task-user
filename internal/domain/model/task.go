@@ -21,7 +21,7 @@ const (
 var validTransitions = map[TaskStatus][]TaskStatus{
 	TaskStatusAssigned:        {TaskStatusStarted},
 	TaskStatusStarted:         {TaskStatusFinishedSuccess, TaskStatusFinishedError, TaskStatusOnHold},
-	TaskStatusOnHold:          {TaskStatusStarted},
+	TaskStatusOnHold:          {TaskStatusFinishedSuccess, TaskStatusFinishedError, TaskStatusOnHold},
 	TaskStatusFinishedSuccess: {}, // terminal
 	TaskStatusFinishedError:   {}, // terminal
 }

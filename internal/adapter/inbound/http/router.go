@@ -36,6 +36,10 @@ func NewRouter(
 	// Public auth routes
 	r.Post("/auth/login", authH.Login)
 
+	// Authenticated routes
+	r.Group(func(r chi.Router) {
+		r.Use(middleware.Authenticate(authPort))
+
 		// Auth
 		r.Post("/auth/logout", authH.Logout)
 		r.Put("/auth/password", authH.ChangePassword)
@@ -69,6 +73,7 @@ func NewRouter(
 			r.Use(middleware.RequireProfile(model.ProfileAuditor))
 			r.Get("/tasks", taskH.ListAll)
 		})
+	})
+
 	return r
 }
-
